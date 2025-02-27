@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/your-repo.git'  // Change to your repo
+                git 'https://github.com/Cohe-rent/node.js.git'  // Change to your repo
             }
         }
 
