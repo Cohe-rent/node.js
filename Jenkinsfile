@@ -59,10 +59,10 @@ spec:
 
     post {
         success {
-            echo '✅ Build and Deployment Successful!'
+            echo 'Build and Deployment Successful!'
         }
         failure {
-            echo '❌ Build Failed. Check logs for details.'
+            echo 'Build Failed. Check logs for details.'
         }
     }
 }
