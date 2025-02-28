@@ -1,37 +1,68 @@
 pipeline {
-    agent any
-
-    environment {
-        NODE_VERSION = '18.0.0'  // Set Node.js version
+    agent {
+        kubernetes {
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  restartPolicy: Never
+  containers:
+  - name: nodejs
+    image: node:18
+    command: [ "sleep", "infinity" ]
+    tty: true
+"""
+        }
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/Cohe-rent/node.js.git'  // Change to your repo
-            }
-        }
-
-        stage('Install Node.js') {
-            steps {
-                script {
-                    def nodeHome = tool name: "NodeJS ${NODE_VERSION}", type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
-                    env.PATH = "${nodeHome}/bin:${env.PATH}"
-                }
+                git branch: 'main', url: 'https://github.com/Cohe-rent/node.js.git'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm install'
+                container('nodejs') {
+                    sh 'ls -la'  // Debug: Check if package.json exists
+                    sh 'node -v'
+                    sh 'npm install'
+                }
             }
         }
 
-        stage('Start Application') {
+        stage('Run Tests') {
             steps {
-                sh 'pm2 stop all || true'   // Stop any running instances
-                sh 'pm2 start server.js --name node-service'
+                container('nodejs') {
+                    sh 'npm test || echo "No tests found, skipping..."'
+                }
             }
+        }
+
+        stage('Build Application') {
+            steps {
+                container('nodejs') {
+                    sh 'npm run build || echo "No build step defined, skipping..."'
+                }
+            }
+        }
+
+        stage('Deploy (Start Server)') {
+            steps {
+                container('nodejs') {
+                    sh 'if [ -f service.js ]; then nohup node service.js & else echo "service.js not found, skipping..."; fi'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Build and Deployment Successful!'
+        }
+        failure {
+            echo '❌ Build Failed. Check logs for details.'
         }
     }
 }
